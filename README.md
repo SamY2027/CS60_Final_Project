@@ -1,0 +1,1 @@
+This is the readme, but right now I'm just trying to figure out git lol
