@@ -89,9 +89,10 @@ PLAYER_SIZE = 50
 
 PLAYER_SPEED = 10
 
-ATTACK_FRAMES = 15
+ATTACK_FRAMES = 60
 ATTACK_RANGE = 50
 SWORD_THICKNESS = 5
+ATTACK_DAMAGE = 5
 
 BACKGROUND_COLOR = pygame.Color("white")
 P1_COLOR = pygame.Color("blue")
@@ -134,7 +135,25 @@ def render_frame(game_state: GameState, window):
         pygame.draw.line(window, SWORD_COLOR, p2_center, [p2_center[0] + sword_tip_offset[0], p2_center[1] - sword_tip_offset[1]], SWORD_THICKNESS)
 
     # Display text of all game state information (usefull for debugging)
+    default_font = pygame.font.Font("freesansbold.ttf", 20) # Load default font shipped with pygame
 
+    # Player 1 stats in formatted string
+    p1_stats = f"Player 1 HP: {game_state.p1_hp}\nPlayer 1 X: {game_state.p1_x}\nP1 Attack Frame: {game_state.p1_atk_frame}"
+
+    # Player 2 stats in formatted string
+    p2_stats = f"Player 2 HP: {game_state.p2_hp}\nPlayer 2 X: {game_state.p2_x}\nP2 Attack Frame: {game_state.p2_atk_frame}"
+
+    p1_text = default_font.render(p1_stats, True, (0, 0, 0))
+    p2_text = default_font.render(p2_stats, True, (0, 0, 0))
+
+    p1_textRect = p1_text.get_rect()
+    p1_textRect.center = (100, 50)
+
+    p2_textRect = p2_text.get_rect()
+    p2_textRect.center = (WINDOW_WIDTH - 100, 50)
+
+    window.blit(p1_text, p1_textRect)
+    window.blit(p2_text, p2_textRect)
 
     pygame.display.update()
 
@@ -145,9 +164,15 @@ def update_state(current_game_state: GameState, control_state: ControlState) -> 
     # Move Player 1
     if control_state.p1_mv_l and not control_state.p1_mv_r: # Will not move if both move controls pressed!
         new_game_state.p1_x -= PLAYER_SPEED
+        # Check left wall collision
+        if new_game_state.p1_x < PLAYER_SIZE // 2:
+            new_game_state.p1_x = PLAYER_SIZE // 2
 
     elif control_state.p1_mv_r and not control_state.p1_mv_l:
         new_game_state.p1_x += PLAYER_SPEED
+        # Check right wall collision
+        if new_game_state.p1_x > WINDOW_WIDTH - (PLAYER_SIZE // 2):
+            new_game_state.p1_x = WINDOW_WIDTH - (PLAYER_SIZE // 2)
 
     # Process Player 1's attack
     if current_game_state.p1_atk_frame == 0: # p1 has not started an attack
@@ -158,15 +183,25 @@ def update_state(current_game_state: GameState, control_state: ControlState) -> 
         new_game_state.p1_atk_frame += 1
 
     elif current_game_state.p1_atk_frame == ATTACK_FRAMES: # p1 has just completed an attack
-        pass # Process potential damage to p2 then potential victory
+        # Process potential damage to p2
+        # Player is damaged if standing within attack range + half of player size, but ahead of p1's center
+        player_distance = new_game_state.p2_x - new_game_state.p1_x
+        if player_distance <= ATTACK_RANGE + (PLAYER_SIZE // 2) and player_distance >= 0:
+            new_game_state.p2_hp -= ATTACK_DAMAGE
         new_game_state.p1_atk_frame = 0 # reset p1's attack
 
     # Move Player 2
     if control_state.p2_mv_l and not control_state.p2_mv_r: # Will not move if both move controls pressed!
         new_game_state.p2_x -= PLAYER_SPEED
+        # Check left wall collision
+        if new_game_state.p2_x < PLAYER_SIZE // 2:
+            new_game_state.p2_x = PLAYER_SIZE // 2
 
     elif control_state.p2_mv_r and not control_state.p2_mv_l:
         new_game_state.p2_x += PLAYER_SPEED
+        # Check right wall collision
+        if new_game_state.p2_x > WINDOW_WIDTH - (PLAYER_SIZE // 2):
+            new_game_state.p2_x = WINDOW_WIDTH - (PLAYER_SIZE // 2)
 
     # Process Player 2's attack
     if current_game_state.p2_atk_frame == 0: # p2 has not started an attack
@@ -177,7 +212,12 @@ def update_state(current_game_state: GameState, control_state: ControlState) -> 
         new_game_state.p2_atk_frame += 1
 
     elif current_game_state.p2_atk_frame == ATTACK_FRAMES: # p2 has just completed an attack
-        pass # Process potential damage to p1 then potential victory
+        # Process potential damage to p1
+        # Player is damaged if standing within attack range + half of player size, but ahead of p2's center
+        player_distance = new_game_state.p2_x - new_game_state.p1_x
+        if player_distance <= ATTACK_RANGE + (PLAYER_SIZE // 2) and player_distance >= 0:
+            new_game_state.p1_hp -= ATTACK_DAMAGE
+        
         new_game_state.p2_atk_frame = 0 # reset p2's attack
 
     return new_game_state
