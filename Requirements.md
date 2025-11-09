@@ -5,7 +5,7 @@ Written by Sam Young and Aleksander Nowicki
 
 ## Parent Driver file
 
- `./python3 driver.py <Port>` OR `./python3 driver.py <IP> <PORT>`
+ `python3 driver.py <Port>` OR `python3 driver.py <IP> <PORT>`
 
 The driver file *shall*:
 
@@ -30,7 +30,17 @@ The delay based netcode *shall*
 ## Rollback Netcode Version
 
 The rollback netcode version *shall*
-1. Do rollback things
+1. Receive the remote player's input as usual, and if there are no problems simulate the game state as normal, storing the local input, remote input (if correctly received on time), and game state indexed by frame. 
+1. If there are packets dropped, then use rollback netcode protocol
+    1. Store the last certain frame, and the corresponding game state
+    1. Make a primitive guess at the remote input's input, an assumption that the user is still inputting what they were prior
+    1. Simulate the next game state, using the remote user's guessed input and the local user's input
+    1. Continue as above until another packet is received. 
+1. When a delayed packet is received:
+    1. Replace the guess of the user's input for that frame
+    1. If the replacement is different from the guess, simulate the game state from the point of that replacement up until the current displayed frame
+    1. If the newly simulated game state is different from the presumed game state, update it accordingly.
+1. Call the necessary methods in the game state handler to update the display of the game for each frame
 
 
 ### Core Rollback Data Structure
