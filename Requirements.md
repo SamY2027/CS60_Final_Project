@@ -58,9 +58,9 @@ After this, messages will be sent according to the during the game format below
 
 The messages sent over the network during the game follow the format below:
 ```
-+----+----+----+--------+
-|left|rght|attk|framnum |
-+----+----+----+--------+
++----+----+----+----------------+
+|left|rght|attk|framnum         |
++----+----+----+----------------+
 ```
 Where:
 * Left, right, and attack are characters that are either T or F that indicate that the user was inputting those for a given frame
