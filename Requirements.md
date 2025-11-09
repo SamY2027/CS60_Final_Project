@@ -1,6 +1,6 @@
 # Requirements
 
-What is required should go here
+Written by Sam Young and Aleksander Nowicki
 
 
 ## Parent Driver file
@@ -21,10 +21,10 @@ The driver file *shall*:
 1. From here, the driver shall run until it receives a game over message from the game state handler, printing out a summary of the game and exiting. 
 
 ## Delay Based Netcode Version
- 'delay_netcode.py'
+ `delay_netcode.py`
 
 The delay based netcode *shall*
-1. Wait until it has received control inputs over the network for the other play before advancing the frame
+1. Wait until it has received control inputs over the network for the other player before advancing the frame
 2. Not store any history of game state or controller inputs outside of the current frame
 
 ## Rollback Netcode Version
@@ -40,6 +40,31 @@ The game logic *shall*
 3. Implement game and controller states that can be easily summarized in a list to save, compare and send over the network
 4. Render the game using only the previously mentioned game state
 5. Be able to simulate several frames of gameplay in the time allotted before the next frame must be displayed
+
+## Message Format
+
+The initiation messages follow the format below during the start of the game, sent from the server to the remote host
+
+* `Connected D` for delay based netcode
+* `Connected R` for rollback based netcode
+
+At the start of the game, to ensure that the players are synced up to start, the game will have a countdown, which shall be synchronized between the users and communicated in the following message to aid in starting at the same time:
+
+* `Start 3`, which waits for the other player's start 3 before continuing 
+* `Start 2`, which waits for the other player's start 2 before continuing 
+* `Start 1`, which waits for the other player's start 1 before continuing 
+
+After this, messages will be sent according to the during the game format below
+
+The messages sent over the network during the game follow the format below:
+```
++----+----+----+--------+
+|left|rght|attk|framnum |
++----+----+----+--------+
+```
+Where:
+* Left, right, and attack are characters that are either T or F that indicate that the user was inputting those for a given frame
+* Frame number is sent as a 16 bit integer, as the time of the game will be bounded by a timer of 99 seconds, at 30 frames per second
 
 
 ```
