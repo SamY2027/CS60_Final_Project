@@ -32,6 +32,26 @@ The delay based netcode *shall*
 The rollback netcode version *shall*
 1. Do rollback things
 
+
+### Core Rollback Data Structure
+
+The rollback system maintains an array with the length of the max frame number, thus each index represents a frame.
+
+Each index in the array contains (GameState, LocalInput, RemoteInput) as a tuple or similar structure
+
+GameState is a list summary of a GameState class
+LocalInput and RemoteInput are strings indicating T/F for the state of each of the players' three controls (eg. TTF)
+
+We also maintain two integers which point to indices within the array
+last_frame_received = The latest frame for which we have received the remote player's inputs over the network
+
+current_display_frame = The frame currently being displayed to the local player
+
+All GameStates after the one calculated using the inputs at index last_frame_received are guesses using the inputs from the local player at each frame and guesses for the remote player's inputs, as described above.
+
+When a new set of inputs is received from the remote player, these replace the guesses in the array, and each game state up to the index indicated by current_display_frame is recalculated using these new inputs along with new guesses for later frame inputs.
+
+
 ## Game Logic Handler
 
 The game logic *shall*
