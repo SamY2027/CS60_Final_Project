@@ -96,24 +96,3 @@ Where:
 * Left, right, and attack are characters that are either T or F that indicate that the user was inputting those for a given frame
 * Frame number is sent as a 16 bit integer, as the time of the game will be bounded by a timer of 99 seconds, at 30 frames per second
 
-
-```
-    Files needed:
-        parent driver file
-        Delay based network beacon version
-        Rollback based network beacon version
-        game logic handler
-        
-```
-
-```
-    functionality - what should the system do?
-    performance - goals for speed, size, energy efficiency, etc.
-    compliance - with federal/state law or institutional policy
-    compatibility - with standards or with existing systems
-    security - against a specific threat model under certain trust assumptions
-    cost - goals for cost, if system operation incurs costs
-    timeline - when will various part of the system be completed? what are the deadlines?
-    hardware/software - what hardware or software must be purchased or provisioned?
-    personnel - who will work on this project?
-```
