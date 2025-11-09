@@ -7,15 +7,20 @@ What is required should go here
 
  `./python3 driver.py <Port>` OR `./python3 driver.py <IP> <PORT>`
 
-The driver file *shall*
-    1. Start from the command line with the form above. If started via the first methon, it opens a socket with the given port and listens for connections
-    1.
-    1.
-    1.
-    1.
+The driver file *shall*:
+
+1. Start from the command line with the form above. If started via the first method, it opens a socket with the given port and listens for connections. If started with the second option, connects to the driver at the given port and IP. 
+1. Once a connection has been initiated, the driver allows for the selection of serveral options before the initiation of a game. 
+    * Whether to initiate a game using the delay based protocol or the rollback protocol
+    * If the game is using the rollback protocol, how much input delay to have
+    * Whether to start a game in the debugging/test mode, which should only display whether the inputs are being correctly captured and sent
+1. Once a game has been initiated, the driver starts several threads
+    * One to handle the user input, send it via the send method in `server.py` and update the game state accordingly
+    * One to update the gamestate at a constant rate based on the local input and the remote input
+    * One to listen on the socket for inputs from the remote player, and call methods from `rollback.py` or `delay.py` to handle them
+1. From here, the driver shall run until it receives a game over message from the game state handler, printing out a summary of the game and exiting. 
 
 ## Delay Based Netcode Version
-
  'delay_netcode.py'
 
 The delay based netcode *shall*
@@ -46,6 +51,7 @@ The game logic *shall*
         
 ```
 
+```
     functionality - what should the system do?
     performance - goals for speed, size, energy efficiency, etc.
     compliance - with federal/state law or institutional policy
@@ -55,3 +61,4 @@ The game logic *shall*
     timeline - when will various part of the system be completed? what are the deadlines?
     hardware/software - what hardware or software must be purchased or provisioned?
     personnel - who will work on this project?
+```
