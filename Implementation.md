@@ -5,18 +5,18 @@ Written by Sam Young and Aleksander Nowicki
 
 ### Definiton of Function Protypes
 
-'''python
+```python
 
 # Parse command line arguments, Call various functions to execute program funcitonality
 main():
     pass
 
 
-'''
+```
 
 ### Detailed Pseudo Code
 
-'''python
+```python
 
 def main():
     
@@ -73,7 +73,7 @@ def listen():
 
 def run_game():
 
-'''
+```
 
 ### Testing Plan
 
@@ -93,7 +93,7 @@ uses no floating point math and is deterministic on control inputs as to maintai
 
 ### Data Structures
 
-'''python
+```python
 # Stores the state of the game on a particular frame
 # Contains 6 integer variables, (p1_x, p1_hp, p1_atk_frame, p2_x, p2_hp, p2_atk_frame)
 # which together sumarize the entire state of the game
@@ -103,11 +103,11 @@ class GameState:
 # Contains 3 booleans representing whether each of that player's buttons are pressed on a given frame
 # (mv_l (move left), mv_r (move  right) and atk (attack))
 class ControlState:
-'''
+```
 
 ### Definition of Function Prototypes
 
-'''python
+```python
 
 # Render the given state of the game using pygame library
 def render_frame(game_state: GameState, window):
@@ -142,7 +142,7 @@ def make_list(self) -> list:
 # Create a ControlState from a list output by the above function, this is called by init if you pass a control_state_list
 def load_from_list(self, control_state_list):
 
-'''
+```
 
 ### Testing Plan
 
