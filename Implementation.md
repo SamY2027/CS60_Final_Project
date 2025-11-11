@@ -46,7 +46,7 @@ def main():
         else: # Mode is Rollback
             send_message(socket, "Connected Rollback")
 
-        # at this point, we have all the information we need to start the game in the correct mode as either server or client
+        # at this point, we have all the information we need to start the game in the correct mode as server
 
         start_thread(get_local_input)
 
@@ -59,20 +59,23 @@ def main():
 
         mode = get_message(socket) # Get either Delay or Rollback message from server to decide mode
 
-        if mode == Delay:
+        # at this point, we have all the information we need to start the game in the correct mode as client
+        start_thread(get_local_input)
 
-        else: # Mode is Rollback
+        start_thread(listen)
 
+        start_thread(run_game)
+        
 # Thread functions
 
 def get_local_input():
+    # Read and report whether relevant keys are pressed
 
+def listen(queue):
+    # add messages received from the remote host to an accessible queue for other branches
 
-def listen():
-
-
-def run_game():
-
+def run_game(mode):
+    # based on mode, either call delay or rollback function, to run on loop
 ```
 
 ### Testing Plan
