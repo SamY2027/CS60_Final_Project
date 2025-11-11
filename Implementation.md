@@ -147,3 +147,51 @@ def load_from_list(self, control_state_list):
 ### Testing Plan
 
 game_local.py, while not part of the final product, utilizes the Game Logic functions and classes to implement the simple game as local multiplayer, where both players' inputs come from the same keyboard. This allows testing of Game Logic in isolation from issues potentially arising from the network. That way, we can go into testing notcodes without having to worry about bugs fundemental to the game itself
+
+## Delay
+The delay based netcode will be passed in the game state handler and the socket that is connected to the remote player. It will implement the following methods:
+
+```python
+__init__(self, socket: socket, game_state)
+    Initializes variables
+
+def netcode(self):
+    listen for remote input over the socket
+        upon receiving remote input, use it and the local input to change the game state
+    wait for the next input
+```
+
+## Rollback
+The rollback netcode is much more involved and keeps track of past inputs in order to be able to roll back from missed packets. 
+
+```python
+__init__(self, socket:socket, game_state):
+    initializes variables
+    initializes list of inputs
+
+def netcode(self):
+    listen for remote input over the socket
+        if received on time:
+            procede as normal, updating the game state 
+            add the inputs and game state for this frame to the list
+        else:
+            store the last frame that input was received
+            retrieve the last known input and assume it was the input for this frame
+                update the list and game state accordingly
+        if input for prior frame received late:
+            if it is different from what the predicted input was in the list:
+                use the new input alongside the user's input from that frame to update the game state
+                if the game state is different for that frame 
+                    continue to calculate the updated states, overwrite the list
+                    replace the current state with the re-written state
+                    render as usual
+```
+
+### Data Structures
+The rollback netcode version stores the prior inputs from past frames in order to be able to roll back to prior states and accurately simulate past game states with input that was delayed in transit. 
+
+It will use a Python List of tuples with three items: `(game_state as string, local input, remote input)`
+
+With these values appended for each frame, the list will be indexed by the frame number and be comprehensive enough to roll back the game state to any needed frame.
+
+For testing, this list can also be exported to a file in order to determine whether inputs were correctly recorded and used
