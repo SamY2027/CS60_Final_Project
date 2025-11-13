@@ -1,0 +1,200 @@
+# Implementation Spec
+Written by Sam Young and Aleksander Nowicki
+
+## Driver File
+
+### Definiton of Function Protypes
+
+```python
+
+# Parse command line arguments, Call various functions to execute program funcitonality
+main():
+    pass
+
+
+```
+
+### Detailed Pseudo Code
+
+```python
+
+def main():
+    
+    if len(command_arguments) > 2:
+        role = server
+        
+        command_arguments[1] = port
+    else:
+        role = client
+        command_arguments[1] = IP_address
+        command_arguments[2] = port
+
+    if role == server:
+        bool debug_mode = get_user_input()
+
+        netcode_type = get_user_input() # Options are "Delay" and "Rollback"
+
+        if netcode_type == Rollback:
+            delay_frames = get_user_input() # Get number of frames to delay by from user
+
+        socket = listen on port # Wait for client to connect
+
+        if netcode_type == Delay:
+            send_message(socket, "Connected Delay")
+
+
+        else: # Mode is Rollback
+            send_message(socket, "Connected Rollback")
+
+        # at this point, we have all the information we need to start the game in the correct mode as server
+
+        start_thread(get_local_input)
+
+        start_thread(listen)
+
+        start_thread(run_game)
+
+    else: # Client
+        socket = connect to IP_address on port via TCP
+
+        mode = get_message(socket) # Get either Delay or Rollback message from server to decide mode
+
+        # at this point, we have all the information we need to start the game in the correct mode as client
+        start_thread(get_local_input)
+
+        start_thread(listen)
+
+        start_thread(run_game)
+        
+# Thread functions
+
+def get_local_input():
+    # Read and report whether relevant keys are pressed
+
+def listen(queue):
+    # add messages received from the remote host to an accessible queue for other branches
+
+def run_game(mode):
+    # based on mode, either call delay or rollback function, to run on loop
+```
+
+### Testing Plan
+
+Using dummy versions of the various delay, rollback and game logic functions which either print to stdout or otherwise idicate they were called can allow us to independently test mode selection.
+
+TCP messages can be observed in wireshark for correct formatting.
+
+The driver's TCP connection functionality can be tested before any actual game functionality is added by simply commenting out everything after initial connection.
+
+A testing mode is built into this program which skips game functionality entirely and simply makes sure that control communications are being sent correctly. This will function both to test driver and either of the delay or rollback netcode modes.
+
+## Game logic
+
+This set of functions implements a very simple 2-player fighting game using the pygame library. This game is designed specifically
+to function well with a rollback system. Game states and control input states are easily stored in special classes. Simulation
+uses no floating point math and is deterministic on control inputs as to maintain consistency between remote devices.
+
+### Data Structures
+
+```python
+# Stores the state of the game on a particular frame
+# Contains 6 integer variables, (p1_x, p1_hp, p1_atk_frame, p2_x, p2_hp, p2_atk_frame)
+# which together sumarize the entire state of the game
+class GameState:
+
+# Store control input for ONE player on a particular frame
+# Contains 3 booleans representing whether each of that player's buttons are pressed on a given frame
+# (mv_l (move left), mv_r (move  right) and atk (attack))
+class ControlState:
+```
+
+### Definition of Function Prototypes
+
+```python
+
+# Render the given state of the game using pygame library
+def render_frame(game_state: GameState, window):
+# Window is a pygame surface where the game will be rendered
+
+# Return the game state on the next frame given the current state (which is not modified) and both players' control inputs
+def update_state(current_game_state: GameState, p1_control_state: ControlState, p2_control_state) -> GameState:
+
+# Methods for GameState
+
+def __init__(self, p1_x=0, p1_hp=100, p1_atk_frame=0, p2_x=0, p2_hp=100, p2_atk_frame=0, game_state_list=None):
+
+# Human readable string summary good for debugging, contains all variable values
+def __str__(self):
+
+# Store all variable values in a list for simple storage and recall, order is same as in init
+def make_list(self) -> list:
+
+# Create a GameState instance from a list output by the above function, this is called by init if you pass a game_state_list
+def load_from_list(self, game_state_list):
+
+# Methods for ControlState
+
+def __init__(self, mv_l=False, mv_r=False, atk=False, control_state_list=None):
+
+# Human readable string summary good for debugging, contains all variable values
+def __str__(self):
+
+# Store all variable valeus in a list for simple storage and recall, order is same as in init
+def make_list(self) -> list:
+
+# Create a ControlState from a list output by the above function, this is called by init if you pass a control_state_list
+def load_from_list(self, control_state_list):
+
+```
+
+### Testing Plan
+
+game_local.py, while not part of the final product, utilizes the Game Logic functions and classes to implement the simple game as local multiplayer, where both players' inputs come from the same keyboard. This allows testing of Game Logic in isolation from issues potentially arising from the network. That way, we can go into testing notcodes without having to worry about bugs fundemental to the game itself
+
+## Delay
+The delay based netcode will be passed in the game state handler and the socket that is connected to the remote player. It will implement the following methods:
+
+```python
+__init__(self, socket: socket, game_state)
+    Initializes variables
+
+def netcode(self):
+    listen for remote input over the socket
+        upon receiving remote input, use it and the local input to change the game state
+    wait for the next input
+```
+
+## Rollback
+The rollback netcode is much more involved and keeps track of past inputs in order to be able to roll back from missed packets. 
+
+```python
+__init__(self, socket:socket, game_state):
+    initializes variables
+    initializes list of inputs
+
+def netcode(self):
+    listen for remote input over the socket
+        if received on time:
+            procede as normal, updating the game state 
+            add the inputs and game state for this frame to the list
+        else:
+            store the last frame that input was received
+            retrieve the last known input and assume it was the input for this frame
+                update the list and game state accordingly
+        if input for prior frame received late:
+            if it is different from what the predicted input was in the list:
+                use the new input alongside the user's input from that frame to update the game state
+                if the game state is different for that frame 
+                    continue to calculate the updated states, overwrite the list
+                    replace the current state with the re-written state
+                    render as usual
+```
+
+### Data Structures
+The rollback netcode version stores the prior inputs from past frames in order to be able to roll back to prior states and accurately simulate past game states with input that was delayed in transit. 
+
+It will use a Python List of tuples with three items: `(game_state as string, local input, remote input)`
+
+With these values appended for each frame, the list will be indexed by the frame number and be comprehensive enough to roll back the game state to any needed frame.
+
+For testing, this list can also be exported to a file in order to determine whether inputs were correctly recorded and used
