@@ -21,6 +21,7 @@ def encode_control_message(frame_number, control_state):
 def decode_control_message(raw_bytes):
     try:
         message = raw_bytes.decode()
+        print(message)
         message = message.split("|") # Can't be typical , because json
         frame_number = int(message[1])
         control_state_list = json.loads(message[2])
