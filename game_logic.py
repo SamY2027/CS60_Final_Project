@@ -141,10 +141,10 @@ def render_frame(game_state: GameState, window):
     default_font = pygame.font.Font("freesansbold.ttf", 20) # Load default font shipped with pygame
 
     # Player 1 stats in formatted string
-    p1_stats = f"Player 1 HP: {game_state.p1_hp}\nPlayer 1 X: {game_state.p1_x}\nP1 Attack Frame: {game_state.p1_atk_frame}"
+    p1_stats = f"Player 1 HP: {game_state.p1_hp}\r\nPlayer 1 X: {game_state.p1_x}\r\nP1 Attack Frame: {game_state.p1_atk_frame}"
 
     # Player 2 stats in formatted string
-    p2_stats = f"Player 2 HP: {game_state.p2_hp}\nPlayer 2 X: {game_state.p2_x}\nP2 Attack Frame: {game_state.p2_atk_frame}"
+    p2_stats = f"Player 2 HP: {game_state.p2_hp}\r\nPlayer 2 X: {game_state.p2_x}\r\nP2 Attack Frame: {game_state.p2_atk_frame}"
 
     p1_text = default_font.render(p1_stats, True, (0, 0, 0))
     p2_text = default_font.render(p2_stats, True, (0, 0, 0))
