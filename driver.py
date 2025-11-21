@@ -5,6 +5,7 @@
 import sys
 import socket
 import delay_netcode
+import rollback_netcode
 
 COMMAND_USAGE_INSTRUCTIONS = "Usage: (Server) python3 driver.py <Port> OR (Client) python3 driver.py <IP> <Port>"
 
@@ -118,7 +119,7 @@ if __name__ == "__main__":
         elif mode == "Delay":
             delay_netcode.run_game(1, client_socket)
         elif mode == "Rollback":
-            pass
+            rollback_netcode.run_game(1, client_socket)
 
         client_socket.close()
 
@@ -141,7 +142,7 @@ if __name__ == "__main__":
         elif mode == "Delay":
             delay_netcode.run_game(2, server_socket)
         elif mode == "Rollback":
-            pass
+            rollback_netcode.run_game(2, server_socket)
         else: # Invalid mode received
             print("Invalid Mode Received!")
 
