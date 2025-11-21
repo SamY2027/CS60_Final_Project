@@ -35,9 +35,9 @@ def decode_buffer_first_message(buffer):
     try:
         message = buffer.decode()
         print(message)
-        message = message.split("|") # Can't be typical , because json
-        frame_number = int(message[1])
-        control_state_list = json.loads(message[2])
+        split_message = message.split("|") # Can't be typical , because json
+        frame_number = int(split_message[1])
+        control_state_list = json.loads(split_message[2])
         control_state = game_logic.ControlState(control_state_list=control_state_list)
 
         remaining_buffer = (message.partition("|\n")[2]).encode()
