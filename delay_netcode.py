@@ -83,7 +83,8 @@ def run_game(player_number, remote_socket):
             try:
                 remote_frame_number, remote_control_state = decode_control_message(remote_socket.recv(1024))
                 break
-            except Exception:
+            except Exception as e:
+                print(f"Exception when receiving packet: {e}")
                 continue
 
         game_logic.render_frame(game_state, window)
