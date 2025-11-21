@@ -3,6 +3,8 @@
 
 import game_logic
 import socket
+import time
+import random
 import pygame
 import json
 
@@ -60,6 +62,9 @@ def run_game(player_number, remote_socket):
                     local_control_state.atk = False
 
         # Transmit our control state, then wait for other player's controls, may block here indefinetely
+
+        if player_number == 2:
+            time.sleep(0.1*random.random()) # introduce artificial delay for testing
         remote_socket.send(encode_control_message(frame_number, local_control_state))
         remote_frame_number, remote_control_state = decode_control_message(remote_socket.recv(1024))
 
@@ -67,6 +72,7 @@ def run_game(player_number, remote_socket):
 
         if player_number == 1:
             game_state = game_logic.update_state(game_state, local_control_state, remote_control_state)
+            print(f"remote frame num: {remote_frame_number} local: {frame_number}")
         elif player_number == 2:
             game_state = game_logic.update_state(game_state, remote_control_state, local_control_state)
 
