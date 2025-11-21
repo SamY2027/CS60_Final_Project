@@ -34,36 +34,47 @@ DELAY = 1
 
 # Returns byte message in format FS,frame_number,control_state
 def encode_control_message(frame_number, control_state):
-    if player_num == 1:
-        message = "FS1" + "|" + str(frame_number) + "|" + json.dumps(control_state.make_list())
-    else:
-        message = "FS2" + "|" + str(frame_number) + "|" + json.dumps(control_state.make_list())
-    return message.encode()
+    try:
+        if player_num == 1:
+            message = "FS1" + "|" + str(frame_number) + "|" + json.dumps(control_state.make_list()) + "|\n"
+        else:
+            message = "FS2" + "|" + str(frame_number) + "|" + json.dumps(control_state.make_list()) + "|\n"
+        return message.encode()
+    except Exception as e:
+        print(f"The following error occured trying to encode the message: {e}")
+        raise Exception("Message Encoding Error")
 
-# Returns frame_number, control_state, given bytes produced by encode_control_message
-def decode_control_message(raw_bytes):
-    message = raw_bytes.decode()
-    message = message.split("|") # Can't be typical , because json
-    if player_num == 1 and message[0] == "FS1":
-        #received own message - discard
-        print(message[0])
-        raise Exception("wrong sender")
-    if player_num == 2 and message[0] == "FS2":
-        #received own message - discard
-        raise Exception("wrong sender")
+# Given the input buffer byte string, returns frame_number, control_state, remaining bytes in buffer
+def decode_buffer_first_message(buffer):
+    try:
+        message = buffer.decode()
+        print(message)
+        split_message = message.split("|") # Can't be typical , because json
+        frame_number = int(split_message[1])
+        control_state_list = json.loads(split_message[2])
+        control_state = game_logic.ControlState(control_state_list=control_state_list)
 
-    frame_number = int(message[1])
-    control_state_list = json.loads(message[2])
-    control_state = game_logic.ControlState(control_state_list=control_state_list)
-    return frame_number, control_state
+        remaining_buffer = (message.partition("|\n")[2]).encode()
+
+        return frame_number, control_state, remaining_buffer
+    except Exception as e:
+        print(f"The following error occured trying to decode the received message: {e}")
+        raise Exception("Message Decoding Error")
 
 def listen_thread(remote_socket):
-
+    
+    # Setup receiving buffer
+    buffer = b""
+    
     while True:
-        try:
-            remote_frame_number, remote_control_state = decode_control_message(remote_socket.recv(1024))
-        except Exception:
-            continue
+        while True:
+            try:
+                buffer += remote_socket.recv(1024)
+                remote_frame_number, remote_control_state, buffer = decode_buffer_first_message(buffer)
+                break
+            except Exception as e:
+                print(f"Exception when receiving message: {e}")
+                continue
 
         with lock:
             if frame_number == remote_frame_number:
