@@ -8,6 +8,9 @@ import random
 import pygame
 import json
 
+# Constant - indicates whether player 2's connection is bad (simulated)
+BAD_CONNECTION = True
+
 # Returns byte message in format FS,frame_number,control_state
 def encode_control_message(frame_number, control_state):
     try:
@@ -89,7 +92,7 @@ def run_game(player_number, remote_socket):
 
         # Transmit our control state, then wait for other player's controls, may block here indefinetely
         
-        if player_number == 2:
+        if player_number == 2 and BAD_CONNECTION:
             time.sleep(0.1*random.random())
 
         remote_socket.send(encode_control_message(frame_number, local_control_state))
