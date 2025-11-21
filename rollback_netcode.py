@@ -92,15 +92,15 @@ def listen_thread(remote_socket):
                         if player_num == 1:
                             sim_game_state = game_logic.update_state(
                                 game_logic.GameState(game_state_list=rollback_list[i-1]["game_state_list"]),
-                                game_logic.ControlState(rollback_list[i]["local_input"]),
-                                game_logic.ControlState(rollback_list[i]["remote_input"])
+                                game_logic.ControlState(control_state_list=rollback_list[i]["local_input"]),
+                                game_logic.ControlState(control_state_list=rollback_list[i]["remote_input"])
 
                             )
                         else:
                             sim_game_state = game_logic.update_state(
                                 game_logic.GameState(game_state_list=rollback_list[i-1]["game_state_list"]),
-                                game_logic.ControlState(rollback_list[i]["remote_input"]),
-                                game_logic.ControlState(rollback_list[i]["local_input"])
+                                game_logic.ControlState(control_state_list=rollback_list[i]["remote_input"]),
+                                game_logic.ControlState(control_state_list=rollback_list[i]["local_input"])
                             )
 
                         if sim_game_state.make_list() == rollback_list[i]["game_state_list"]:
