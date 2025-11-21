@@ -14,6 +14,8 @@ import threading
 import pygame
 import copy
 import json
+import time
+import random
 
 
 
@@ -28,6 +30,9 @@ lock = threading.Lock()
 
 # Number of frames back to to render
 DELAY = 1
+
+# Global for bad connection - if true, player 2's sends are delayed
+BAD_CONNECTION = True
 
 # Store player num for simulation
 
@@ -173,6 +178,10 @@ def listen_thread(remote_socket):
 
         # now handle the game state updates in the main loop
 
+def delayed_send(remote_socket,msg_bytes):
+    time.sleep(0.33*random.random())
+    remote_socket.send(msg_bytes)
+
 # controlled sender checks to make sure that a packet hasn't been sent
 # for the frame number
 # Only call its send within a locked block
@@ -185,13 +194,18 @@ class Controlled_Sender:
     def send(self, frame, msg_bytes):
         if frame == self.curr_frame:
             # Send is valid - send the message and increment curr
-            self.remote_socket.send(msg_bytes)
+            if BAD_CONNECTION and player_num == 2:
+                send_thread = threading.Thread(target=delayed_send, args=(self.remote_socket, msg_bytes), daemon=True)
+                send_thread.start()
+            else:
+                self.remote_socket.send(msg_bytes)
             self.curr_frame += 1
             return True
         elif frame > self.curr_frame:
             # Something has gone horribly wrong - message sent without controlled sender
             print("Error - missed sending packets")
         return False
+
 
 def run_game(player_number, remote_socket):
     # First time only setup code
