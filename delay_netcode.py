@@ -11,7 +11,7 @@ import json
 # Returns byte message in format FS,frame_number,control_state
 def encode_control_message(frame_number, control_state):
     try:
-        message = "FS" + "|" + str(frame_number) + "|" + json.dumps(control_state.make_list())
+        message = "FS" + "|" + str(frame_number) + "|" + json.dumps(control_state.make_list()) + "|\n"
         return message.encode()
     except Exception as e:
         print(f"The following error occured trying to encode the message: {e}")
@@ -27,6 +27,22 @@ def decode_control_message(raw_bytes):
         control_state_list = json.loads(message[2])
         control_state = game_logic.ControlState(control_state_list=control_state_list)
         return frame_number, control_state
+    except Exception as e:
+        print(f"The following error occured trying to decode the received message: {e}")
+        raise Exception("Message Decoding Error")
+    
+def decode_buffer_first_message(buffer):
+    try:
+        message = buffer.decode()
+        print(message)
+        message = message.split("|") # Can't be typical , because json
+        frame_number = int(message[1])
+        control_state_list = json.loads(message[2])
+        control_state = game_logic.ControlState(control_state_list=control_state_list)
+
+        remaining_buffer = (message.partition("|\n")[2]).encode()
+
+        return frame_number, control_state, remaining_buffer
     except Exception as e:
         print(f"The following error occured trying to decode the received message: {e}")
         raise Exception("Message Decoding Error")
@@ -78,10 +94,16 @@ def run_game(player_number, remote_socket):
 
         remote_socket.send(encode_control_message(frame_number, local_control_state))
 
+        # Buffer for received messages
+        buffer = b""
+
         # Keep trying to receive inputs until it gets valid inputs
         while True:
             try:
-                remote_frame_number, remote_control_state = decode_control_message(remote_socket.recv(1024))
+                #remote_frame_number, remote_control_state = decode_control_message(remote_socket.recv(1024))
+                buffer += remote_socket.recv(1024)
+                remote_frame_number, remote_control_state, buffer = decode_buffer_first_message(buffer)
+
                 break
             except Exception as e:
                 print(f"Exception when receiving packet: {e}")
