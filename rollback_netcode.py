@@ -47,7 +47,7 @@ def encode_control_message(frame_number, control_state):
 def decode_buffer_first_message(buffer):
     try:
         message = buffer.decode()
-        print(message)
+        #print(message)
         split_message = message.split("|") # Can't be typical , because json
         frame_number = int(split_message[1])
         control_state_list = json.loads(split_message[2])
@@ -61,6 +61,7 @@ def decode_buffer_first_message(buffer):
         raise Exception("Message Decoding Error")
 
 def listen_thread(remote_socket):
+    # Use the global frame number and sender
     
     # Setup receiving buffer
     buffer = b""
@@ -124,7 +125,48 @@ def listen_thread(remote_socket):
             elif frame_number < remote_frame_number:
                 # Worst case scenario - computers desynced/ running diff rates
                 # Speed up to catch up to the remote
-                print("running slow - desynced")
+                # Send multiple packets of assumed inputs and simulate
+                # game state to catch up
+                # Append to list as needed
+                with lock:
+
+                    print(f"desync - remote computer ahead by {remote_frame_number-frame_number}")
+                    """
+                    global frame_number
+                    global sender
+                    while frame_number < remote_frame_number:
+                        last_input = rollback_list[frame_number-1]["local_input"]
+                        sent = sender.send(frame_number, game_logic.ControlState(control_state_list=last_input))
+
+                        if sent:
+                            # Successfully sent the input - add it to the list
+                            # Also simulate the game state
+                            # DO NOT make assumptions for the remote input - idk what to do, if there are gaps in the received input just stop there???
+
+                            # This one should not be called
+                            if len(rollback_list) > frame_number:
+                                rollback_list[frame_number]["local_input"] = copy.deepcopy(last_input)
+
+                                if player_num == 1:
+                                    sim_game_state = game_logic.update_state(
+                                        game_logic.GameState(game_state_list=rollback_list[frame_number-1]["game_state_list"]),
+                                        game_logic.ControlState(control_state_list=rollback_list[frame_number]["local_input"]),
+                                        game_logic.ControlState(control_state_list=rollback_list[frame_number]["remote_input"])
+                                    )
+                                else:
+                                    sim_game_state = game_logic.update_state(
+                                        game_logic.GameState(game_state_list=rollback_list[frame_number-1]["game_state_list"]),
+                                        game_logic.ControlState(control_state_list=rollback_list[frame_number]["remote_input"]),
+                                        game_logic.ControlState(control_state_list=rollback_list[frame_number]["local_input"])
+                                    )
+                                rollback_list[frame_number]["game_state_list"] = sim_game_state.make_list()
+                            # Hopefully this one should be called, where we can use the remote input and add it as well
+                            if len(rollback_list) == frame_number and len(rollback_list) == remote_frame_number:
+
+                            
+                        frame_number = frame_number + 1
+                    """
+                
 
 
         # now handle the game state updates in the main loop
@@ -132,7 +174,7 @@ def listen_thread(remote_socket):
 # controlled sender checks to make sure that a packet hasn't been sent
 # for the frame number
 # Only call its send within a locked block
-class controlled_sender():
+class Controlled_Sender:
     def __init__(self, remote_socket, start_frame=1):
         self.remote_socket = remote_socket
         self.curr_frame = start_frame
@@ -175,7 +217,7 @@ def run_game(player_number, remote_socket):
 
     global sender
     # First input to be sent on frame 1
-    sender = controlled_sender(remote_socket, start_frame=1)
+    sender = Controlled_Sender(remote_socket, start_frame=1)
 
     # Append frame zero's inputs (nothing) to the list
     # prevents index errors hopefully
