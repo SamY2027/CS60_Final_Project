@@ -3,13 +3,18 @@
 
 import game_logic
 import socket
+import time
+import random
 import pygame
 import json
+
+# Constant - indicates whether player 2's connection is bad (simulated)
+BAD_CONNECTION = True
 
 # Returns byte message in format FS,frame_number,control_state
 def encode_control_message(frame_number, control_state):
     try:
-        message = "FS" + "|" + str(frame_number) + "|" + json.dumps(control_state.make_list())
+        message = "FS" + "|" + str(frame_number) + "|" + json.dumps(control_state.make_list()) + "|\n"
         return message.encode()
     except Exception as e:
         print(f"The following error occured trying to encode the message: {e}")
@@ -19,11 +24,28 @@ def encode_control_message(frame_number, control_state):
 def decode_control_message(raw_bytes):
     try:
         message = raw_bytes.decode()
+        print(message)
         message = message.split("|") # Can't be typical , because json
         frame_number = int(message[1])
         control_state_list = json.loads(message[2])
         control_state = game_logic.ControlState(control_state_list=control_state_list)
         return frame_number, control_state
+    except Exception as e:
+        print(f"The following error occured trying to decode the received message: {e}")
+        raise Exception("Message Decoding Error")
+    
+def decode_buffer_first_message(buffer):
+    try:
+        message = buffer.decode()
+        print(message)
+        split_message = message.split("|") # Can't be typical , because json
+        frame_number = int(split_message[1])
+        control_state_list = json.loads(split_message[2])
+        control_state = game_logic.ControlState(control_state_list=control_state_list)
+
+        remaining_buffer = (message.partition("|\n")[2]).encode()
+
+        return frame_number, control_state, remaining_buffer
     except Exception as e:
         print(f"The following error occured trying to decode the received message: {e}")
         raise Exception("Message Decoding Error")
@@ -70,14 +92,24 @@ def run_game(player_number, remote_socket):
 
         # Transmit our control state, then wait for other player's controls, may block here indefinetely
         
+        if player_number == 2 and BAD_CONNECTION:
+            time.sleep(0.1*random.random())
+
         remote_socket.send(encode_control_message(frame_number, local_control_state))
+
+        # Buffer for received messages
+        buffer = b""
 
         # Keep trying to receive inputs until it gets valid inputs
         while True:
             try:
-                remote_frame_number, remote_control_state = decode_control_message(remote_socket.recv(1024))
+                #remote_frame_number, remote_control_state = decode_control_message(remote_socket.recv(1024))
+                buffer += remote_socket.recv(1024)
+                remote_frame_number, remote_control_state, buffer = decode_buffer_first_message(buffer)
+
                 break
-            except Exception:
+            except Exception as e:
+                print(f"Exception when receiving packet: {e}")
                 continue
 
         game_logic.render_frame(game_state, window)
