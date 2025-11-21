@@ -8,6 +8,9 @@ import pygame
 import copy
 from math import sin, cos, radians
 
+# Game Name
+GAME_NAME = "Fighting Squares"
+
 # Game Window Size
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 400
@@ -94,9 +97,9 @@ class ControlState:
 
     # Load a controller state from a list in the format output by make_list
     def load_from_list(self, control_state_list):
-        self.p1_mv_l = control_state_list[0]
-        self.p1_mv_r = control_state_list[1]
-        self.p1_atk = control_state_list[2]
+        self.mv_l = control_state_list[0]
+        self.mv_r = control_state_list[1]
+        self.atk = control_state_list[2]
         self.control_state_list = None
 
 

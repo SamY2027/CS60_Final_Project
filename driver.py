@@ -4,6 +4,7 @@
 
 import sys
 import socket
+import delay_netcode
 
 COMMAND_USAGE_INSTRUCTIONS = "Usage: (Server) python3 driver.py <Port> OR (Client) python3 driver.py <IP> <Port>"
 
@@ -109,11 +110,13 @@ if __name__ == "__main__":
 
         client_socket.send(mode.encode()) # Send the current mode to the client
 
+        # Wait for acknowledgement from client
+
         # Run based on current mode
         if mode == "Test":
             pass
         elif mode == "Delay":
-            pass
+            delay_netcode.run_game(1, client_socket)
         elif mode == "Rollback":
             pass
 
@@ -129,11 +132,14 @@ if __name__ == "__main__":
         # Get mode from server
         mode = server_socket.recv(1024).decode() # Valid options are Test, Delay and Rollback
 
+        # Send aknowledgement of mode back to server
+
+
         # Run based on received mode
         if mode == "Test":
             pass
         elif mode == "Delay":
-            pass
+            delay_netcode.run_game(2, server_socket)
         elif mode == "Rollback":
             pass
         else: # Invalid mode received
