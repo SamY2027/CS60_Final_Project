@@ -132,6 +132,8 @@ def listen_thread(remote_socket):
 
                     print(f"desync - remote computer ahead by {remote_frame_number-frame_number}")
                     """
+                    # Leaving this off for now - taking out the print statements speeds up the code enough so that there are no desyncs 
+
                     global frame_number
                     global sender
                     while frame_number < remote_frame_number:
