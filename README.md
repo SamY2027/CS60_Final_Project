@@ -1,6 +1,8 @@
 # Rollback Netcode for a 2-Player Fighting Game
 Aleksander Nowicki and Samuel Young
+
 Final Project CS60 Fall 2025
+
 11 / 21 / 2025
 
 ## Final Writeup is "CS60 Final Writeup.pdf"
