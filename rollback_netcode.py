@@ -6,7 +6,6 @@ simulate the game state to catch up
 
 
 TODO: currently getting desync errors where one computer gets ahead of another, need to probably rapidly simulate the game state and send packets in that case I guess
-TODO: Also getting bug where local player moves with remote player's input - idk why, adding in checks for the sender didn't fix it
 """
 
 import game_logic
@@ -48,7 +47,7 @@ def encode_control_message(frame_number, control_state):
 def decode_buffer_first_message(buffer):
     try:
         message = buffer.decode()
-        print(message)
+        #print(message)
         split_message = message.split("|") # Can't be typical , because json
         frame_number = int(split_message[1])
         control_state_list = json.loads(split_message[2])
@@ -62,6 +61,7 @@ def decode_buffer_first_message(buffer):
         raise Exception("Message Decoding Error")
 
 def listen_thread(remote_socket):
+    # Use the global frame number and sender
     
     # Setup receiving buffer
     buffer = b""
@@ -125,10 +125,73 @@ def listen_thread(remote_socket):
             elif frame_number < remote_frame_number:
                 # Worst case scenario - computers desynced/ running diff rates
                 # Speed up to catch up to the remote
-                print("running slow - desynced")
+                # Send multiple packets of assumed inputs and simulate
+                # game state to catch up
+                # Append to list as needed
+                with lock:
+
+                    print(f"desync - remote computer ahead by {remote_frame_number-frame_number}")
+                    """
+                    # Leaving this off for now - taking out the print statements speeds up the code enough so that there are no desyncs 
+
+                    global frame_number
+                    global sender
+                    while frame_number < remote_frame_number:
+                        last_input = rollback_list[frame_number-1]["local_input"]
+                        sent = sender.send(frame_number, game_logic.ControlState(control_state_list=last_input))
+
+                        if sent:
+                            # Successfully sent the input - add it to the list
+                            # Also simulate the game state
+                            # DO NOT make assumptions for the remote input - idk what to do, if there are gaps in the received input just stop there???
+
+                            # This one should not be called
+                            if len(rollback_list) > frame_number:
+                                rollback_list[frame_number]["local_input"] = copy.deepcopy(last_input)
+
+                                if player_num == 1:
+                                    sim_game_state = game_logic.update_state(
+                                        game_logic.GameState(game_state_list=rollback_list[frame_number-1]["game_state_list"]),
+                                        game_logic.ControlState(control_state_list=rollback_list[frame_number]["local_input"]),
+                                        game_logic.ControlState(control_state_list=rollback_list[frame_number]["remote_input"])
+                                    )
+                                else:
+                                    sim_game_state = game_logic.update_state(
+                                        game_logic.GameState(game_state_list=rollback_list[frame_number-1]["game_state_list"]),
+                                        game_logic.ControlState(control_state_list=rollback_list[frame_number]["remote_input"]),
+                                        game_logic.ControlState(control_state_list=rollback_list[frame_number]["local_input"])
+                                    )
+                                rollback_list[frame_number]["game_state_list"] = sim_game_state.make_list()
+                            # Hopefully this one should be called, where we can use the remote input and add it as well
+                            if len(rollback_list) == frame_number and len(rollback_list) == remote_frame_number:
+
+                            
+                        frame_number = frame_number + 1
+                    """
+                
 
 
         # now handle the game state updates in the main loop
+
+# controlled sender checks to make sure that a packet hasn't been sent
+# for the frame number
+# Only call its send within a locked block
+class Controlled_Sender:
+    def __init__(self, remote_socket, start_frame=1):
+        self.remote_socket = remote_socket
+        self.curr_frame = start_frame
+
+    # Returns True if sent, false if not
+    def send(self, frame, msg_bytes):
+        if frame == self.curr_frame:
+            # Send is valid - send the message and increment curr
+            self.remote_socket.send(msg_bytes)
+            self.curr_frame += 1
+            return True
+        elif frame > self.curr_frame:
+            # Something has gone horribly wrong - message sent without controlled sender
+            print("Error - missed sending packets")
+        return False
 
 def run_game(player_number, remote_socket):
     # First time only setup code
@@ -150,9 +213,13 @@ def run_game(player_number, remote_socket):
     remote_control_state = game_logic.ControlState() # Game starts with no controls pressed
 
     listener = threading.Thread(target=listen_thread, args=(remote_socket,), daemon=True)
-    # Game Loop
+
     global frame_number # Mark as global to check against elsewhere
     frame_number = 0
+
+    global sender
+    # First input to be sent on frame 1
+    sender = Controlled_Sender(remote_socket, start_frame=1)
 
     # Append frame zero's inputs (nothing) to the list
     # prevents index errors hopefully
@@ -163,6 +230,8 @@ def run_game(player_number, remote_socket):
                              "game_state_list":game_state.make_list()
         })
     running = True
+
+    # This can be the only send without using the controlled sender
     remote_socket.send(b'starting game')
     print(remote_socket.recv(1024))
 
@@ -173,6 +242,7 @@ def run_game(player_number, remote_socket):
     #print("started listener")
     
 
+    # Game Loop
     while running:
 
         for event in pygame.event.get():
@@ -195,21 +265,25 @@ def run_game(player_number, remote_socket):
                 elif event.key == pygame.K_s: # s is players's attack
                     local_control_state.atk = False
 
-        remote_socket.send(encode_control_message(frame_number, local_control_state))
+        # remote_socket.send(encode_control_message(frame_number, local_control_state))
         #print("sent packet")
 
         with lock:
-            if len(rollback_list) > frame_number:
-                rollback_list[frame_number]["local_input"] = local_control_state.make_list()
-            elif len(rollback_list) == frame_number:
-                rollback_list.append({
-                        "local_input":local_control_state.make_list(),
-                        "remote_input": copy.deepcopy(rollback_list[-1]["remote_input"])
-                })
-            else:
-                # Error - somehow skipped a frame locally???
-                #
-                print("Error - desync?")
+            #remote_socket.send(encode_control_message(frame_number, local_control_state))
+            sent = sender.send(frame_number, encode_control_message(frame_number,local_control_state))
+
+            if sent:
+                if len(rollback_list) > frame_number:
+                    rollback_list[frame_number]["local_input"] = local_control_state.make_list()
+                elif len(rollback_list) == frame_number:
+                    rollback_list.append({
+                            "local_input":local_control_state.make_list(),
+                            "remote_input": copy.deepcopy(rollback_list[-1]["remote_input"])
+                    })
+                else:
+                    # Error - somehow skipped a frame locally???
+                    #
+                    print("Error - desync?")
 
         with lock:
             game_logic.render_frame(game_logic.GameState(game_state_list=rollback_list[frame_number-1]["game_state_list"]), window)
