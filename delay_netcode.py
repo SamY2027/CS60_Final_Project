@@ -1,5 +1,10 @@
+# Aleksander Nowicki and Samuel Young
+# Dartmouth CS60 25F Final Project
+# 11/21/2025
+# Delay Netcode Module
+#
 # Functions to run game from game_logic with a delay based netcode
-# i.e., game will wait to receive inputs from the remote player before advancing the frame
+# The game will wait to receive inputs from the remote player before advancing the frame
 
 import game_logic
 import socket
@@ -9,9 +14,9 @@ import pygame
 import json
 
 # Constant - indicates whether player 2's connection is bad (simulated)
-BAD_CONNECTION = True
+BAD_CONNECTION = False
 
-# Returns byte message in format FS,frame_number,control_state
+# Returns byte message in format FS|frame_number|control_state|\n
 def encode_control_message(frame_number, control_state):
     try:
         message = "FS" + "|" + str(frame_number) + "|" + json.dumps(control_state.make_list()) + "|\n"
@@ -20,20 +25,7 @@ def encode_control_message(frame_number, control_state):
         print(f"The following error occured trying to encode the message: {e}")
         raise Exception("Message Encoding Error")
 
-# Returns frame_number, control_state, given bytes produced by encode_control_message
-def decode_control_message(raw_bytes):
-    try:
-        message = raw_bytes.decode()
-        print(message)
-        message = message.split("|") # Can't be typical , because json
-        frame_number = int(message[1])
-        control_state_list = json.loads(message[2])
-        control_state = game_logic.ControlState(control_state_list=control_state_list)
-        return frame_number, control_state
-    except Exception as e:
-        print(f"The following error occured trying to decode the received message: {e}")
-        raise Exception("Message Decoding Error")
-    
+# Decode the first message in the buffer, returning frame_number and control_state from that message + rest of buffer
 def decode_buffer_first_message(buffer):
     try:
         message = buffer.decode()
@@ -51,6 +43,7 @@ def decode_buffer_first_message(buffer):
         raise Exception("Message Decoding Error")
 
 
+# Main game setup / loop
 def run_game(player_number, remote_socket):
     # First time only setup code
     pygame.init()
@@ -71,9 +64,10 @@ def run_game(player_number, remote_socket):
     running = True
     while running:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+            if event.type == pygame.QUIT: # Check if player closed game window
                 running = False
 
+            # Get local input
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_a: # a moves player left
                     local_control_state.mv_l = True
@@ -90,11 +84,13 @@ def run_game(player_number, remote_socket):
                 elif event.key == pygame.K_s: # s is players's attack
                     local_control_state.atk = False
 
-        # Transmit our control state, then wait for other player's controls, may block here indefinetely
         
+        
+        # Introduce random delay to simulate bad network connection if that mode is enabled
         if player_number == 2 and BAD_CONNECTION:
             time.sleep(0.1*random.random())
 
+        # Transmit our control state, then wait for other player's controls, may block here indefinetely
         remote_socket.send(encode_control_message(frame_number, local_control_state))
 
         # Buffer for received messages
@@ -114,6 +110,7 @@ def run_game(player_number, remote_socket):
 
         game_logic.render_frame(game_state, window)
 
+        # Player 1 is left, player 2 right
         if player_number == 1:
             game_state = game_logic.update_state(game_state, local_control_state, remote_control_state)
         elif player_number == 2:
