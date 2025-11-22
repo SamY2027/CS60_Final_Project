@@ -1,10 +1,15 @@
+# Aleksander Nowicki and Samuel Young
+# Dartmouth CS60 25F Final Project
+# 11/21/2025
+# Game Logic Module
+#
 # Module to implement the core functionality of a two-player fighting game.
 # Classes to conveniently handle storing variables for state of game and players' 
 # control inputs. 
 # Functions to update game state based on controls and to render the game.
 # Game rendering is independent of the simulation, ideal for netcode experiments.
 
-import pygame
+import pygame # Simple library to handle keyboard input and 2D graphics
 import copy
 from math import sin, cos, radians
 
@@ -102,6 +107,10 @@ class ControlState:
         self.atk = control_state_list[2]
         self.control_state_list = None
 
+
+# Display the given game state in given pygame window. Also displays values
+# of all GameState variables to allow for convenient debugging and to confirm that
+# remote instances of the game are in sync.
 
 def render_frame(game_state: GameState, window):
     # Clear Background
