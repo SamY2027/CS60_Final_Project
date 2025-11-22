@@ -1,3 +1,8 @@
+# Aleksander Nowicki and Samuel Young
+# Dartmouth CS60 25F Final Project
+# 11/21/2025
+# Main Driver Program
+#
 # Main driver program for our netocode project
 # Takes command line args / user input for game options
 # Calls other modules to run the game
@@ -67,15 +72,13 @@ def get_mode():
     # Choose netcode type
         mode = None
         while mode == None:
-            print("Enter the number corresponding to the mode you want to run in:\n(1) Test\n(2) Delay\n(3) Rollback")
+            print("Enter the number corresponding to the mode you want to run in:\n(1) Delay\n(2) Rollback")
             mode = input()
             try:
                 mode = int(mode)
                 if mode == 1:
-                    mode = "Test"
-                elif mode == 2:
                     mode = "Delay"
-                elif mode == 3:
+                elif mode == 2:
                     mode = "Rollback"
                 else:
                     print("Please select a valid mode!")
@@ -89,11 +92,11 @@ def get_mode():
 
 if __name__ == "__main__":
     role, ip_address, port = parse_args(sys.argv)
-    print(role, ip_address, port)
+    #print(role, ip_address, port)
 
     if role == "Server":
-        mode = get_mode() # Possibilities are "Test", "Delay" and 'Rollback
-        print(mode)
+        mode = get_mode() # Possibilities are "Delay" and 'Rollback
+        #print(mode)
 
         # Open socket and wait for client to connect on given port
         listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #IPv4, TCP
@@ -111,12 +114,8 @@ if __name__ == "__main__":
 
         client_socket.send(mode.encode()) # Send the current mode to the client
 
-        # Wait for acknowledgement from client
-
         # Run based on current mode
-        if mode == "Test":
-            pass
-        elif mode == "Delay":
+        if mode == "Delay":
             delay_netcode.run_game(1, client_socket)
         elif mode == "Rollback":
             rollback_netcode.run_game(1, client_socket)
@@ -133,13 +132,8 @@ if __name__ == "__main__":
         # Get mode from server
         mode = server_socket.recv(1024).decode() # Valid options are Test, Delay and Rollback
 
-        # Send aknowledgement of mode back to server
-
-
         # Run based on received mode
-        if mode == "Test":
-            pass
-        elif mode == "Delay":
+        if mode == "Delay":
             delay_netcode.run_game(2, server_socket)
         elif mode == "Rollback":
             rollback_netcode.run_game(2, server_socket)
