@@ -29,7 +29,7 @@ def encode_control_message(frame_number, control_state):
 def decode_buffer_first_message(buffer):
     try:
         message = buffer.decode()
-        print(message)
+        #print(message)
         split_message = message.split("|") # Can't be typical , because json
         frame_number = int(split_message[1])
         control_state_list = json.loads(split_message[2])
